@@ -1,0 +1,40 @@
+# Docker Compose 설정 - 로컬 개발 환경
+# AI 목업 이미지 생성 프로그램
+
+services:
+  # PostgreSQL 데이터베이스
+  postgres:
+    image: postgres:16-alpine
+    container_name: mockup_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mockup_user
+      POSTGRES_PASSWORD: mockup_password
+      POSTGRES_DB: mockup_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mockup_user -d mockup_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Redis (세션/캐시용 - 선택사항)
+  redis:
+    image: redis:7-alpine
+    container_name: mockup_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+volumes:
+  postgres_data:
+    name: mockup_postgres_data
+  redis_data:
+    name: mockup_redis_data

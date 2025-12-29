@@ -1,0 +1,106 @@
+// Prisma 스키마 파일
+// AI 목업 이미지 생성 프로그램
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 사용자 모델
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String    // bcrypt 해시됨
+  name          String
+  profileImage  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // 관계
+  projects      Project[]
+  refreshTokens RefreshToken[]
+  
+  @@map("users")
+}
+
+// 리프레시 토큰 (JWT 관리)
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@map("refresh_tokens")
+}
+
+// 프로젝트 모델
+model Project {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  category    Category
+  ipCharacter String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime? // 소프트 삭제
+  
+  // 관계
+  generations GenerationHistory[]
+  
+  @@index([userId])
+  @@map("projects")
+}
+
+// 카테고리 열거형
+enum Category {
+  general_goods     // 일반 상품
+  plush_textiles    // 봉제/섬유
+  figures           // 피규어
+}
+
+// 생성 이력 모델
+model GenerationHistory {
+  id           String   @id @default(cuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mode         GenerationMode
+  inputImages  String[] // 파일 경로 배열
+  outputImages String[] // 파일 경로 배열
+  settings     Json     // GenerationSettings
+  isFavorite   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  
+  // 관계
+  template     FavoriteTemplate?
+  
+  @@index([projectId])
+  @@map("generation_history")
+}
+
+// 생성 모드 열거형
+enum GenerationMode {
+  ip_replacement        // IP 교체
+  sketch_to_mockup      // 스케치 → 목업
+  background_composite  // 배경 합성
+  history_based         // 히스토리 기반
+}
+
+// 즐겨찾기 템플릿 모델
+model FavoriteTemplate {
+  id        String   @id @default(cuid())
+  historyId String   @unique
+  history   GenerationHistory @relation(fields: [historyId], references: [id], onDelete: Cascade)
+  name      String
+  tags      String[]
+  createdAt DateTime @default(now())
+  
+  @@map("favorite_templates")
+}
