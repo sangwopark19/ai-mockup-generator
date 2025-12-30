@@ -40,6 +40,7 @@ export class GeminiProvider implements IAIModelProvider {
     // 모드 추출 (prompt가 모드인 경우)
     const mode = (prompt as GenerationModeType) || 'ip_replacement';
     const fullPrompt = buildPrompt(mode, settings);
+    console.log('fullPrompt', fullPrompt);
 
 
     // 입력 이미지 파트 준비

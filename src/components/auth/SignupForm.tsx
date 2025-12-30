@@ -2,7 +2,7 @@
 
 // 회원가입 폼 컴포넌트
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/stores/auth-store';
@@ -10,17 +10,51 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 export function SignupForm() {
   const router = useRouter();
-  const { setUser, setTokens } = useAuthStore();
+  const { setUser, setTokens, isHydrated, isAuthenticated, accessToken } = useAuthStore();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // 이미 로그인된 사용자는 대시보드로 리다이렉트
+  useEffect(() => {
+    if (isHydrated && isAuthenticated && accessToken) {
+      router.push('/dashboard');
+    }
+  }, [isHydrated, isAuthenticated, accessToken, router]);
+
+  // Hydration 대기 중 로딩 표시
+  if (!isHydrated) {
+    return (
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <Skeleton className="h-8 w-32 mx-auto" />
+          <Skeleton className="h-4 w-48 mx-auto" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </CardContent>
+        <CardFooter>
+          <Skeleton className="h-10 w-full" />
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  // 이미 인증된 경우 리다이렉트 중
+  if (isAuthenticated && accessToken) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
